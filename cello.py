@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # -*- coding: latin-1 -*-
 
@@ -75,47 +75,47 @@ def ExportBmp(co, no):
 def ExistingFile(tfile):
   for r,d,f in os.walk("bitmaps"):
       for files in f:
-	  if files.endswith(".bmp"):
-	      bfile = os.path.join(r,files)
-	      if filecmp.cmp(tfile, bfile, False):
-		return True
+        if files.endswith(".bmp"):
+            bfile = os.path.join(r,files)
+            if filecmp.cmp(tfile, bfile, False):
+                return True
   return False
              
 def RemoveBitmaps():
   for r,d,f in os.walk("bitmaps"):
       for files in f:
-	  if files.endswith(".bmp"):
-	      bfile = os.path.join(r,files)
-              os.remove(bfile)
+        if files.endswith(".bmp"):
+            bfile = os.path.join(r,files)
+            os.remove(bfile)
 
              
 def C1(ca):
-  print "%d:%d" % (ca.X, ca.Y)
+  print("%d:%d" % (ca.X, ca.Y))
   s = ["=O=" for r in range(20)]
-  sep = string.join(s, '')
-  print sep
+  sep = ''.join(s)
+  print(sep)
   no = 0
   while ca.Cycle():
       #co.P()	
       no = no + 1
       if not ExportBmp(ca, no):
-	return
-      print no
-  print sep
+        return
+      print(no)
+  print(sep)
 
     
 def main():
   parser = Parser()
   options, args = parser.parse_args()
   if options.about:
-    print __about
+    print(__about)
     return 0
   x = int(options.x)
   y = int(options.y) if options.y else int(options.x)
   if x % 2 == 0:
-    print "warning x is not odd"
+    print("warning x is not odd")
   if y % 2 == 0:
-    print "warning y is not odd"
+    print("warning y is not odd")
   ca = CA(x, y, int(options.b), int(options.d))
   RemoveBitmaps()
   C1(ca)

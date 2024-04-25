@@ -43,8 +43,8 @@ class CA(object):
       self.n = copy.copy(self.v)
       self.o = copy.copy(self.v)
       for i in range(-1,2):
-	self.v[self.idx(self.X / 2 + i, self.Y / 2)] = 1
-	self.v[self.idx(self.X / 2, self.Y / 2 + i)] = 1
+        self.v[self.idx(self.X // 2 + i, self.Y // 2)] = 1
+        self.v[self.idx(self.X // 2, self.Y // 2 + i)] = 1
 
     def idx(self, x, y): 
       return y * self.X + x
@@ -54,17 +54,17 @@ class CA(object):
         for y in range(self.Y):
           self.n[self.idx(x, y)] = 0
           for i in range(-1, 2):
-	    for j in range(-1, 2):
-	      if x+i>=0 and x+i<self.X and y+j>=0 and \
-	        y+j<self.Y and not (i==0 and j == 0):
-		  if self.v[self.idx(x+i, y+j)]:
-		    self.n[self.idx(x, y)] += 1
+            for j in range(-1, 2):
+              if x+i>=0 and x+i<self.X and y+j>=0 and \
+                y+j<self.Y and not (i==0 and j == 0):
+                if self.v[self.idx(x+i, y+j)]:
+                    self.n[self.idx(x, y)] += 1
 
     def B(self):
       self.N()
       for x in range(self.X):
         for y in range(self.Y):
-	  idx = self.idx(x, y)
+          idx = self.idx(x, y)
           if not self.v[idx]:
             if self.n[idx] > 1 and self.n[idx] < self.Db:
               self.v[idx] = 1
@@ -73,21 +73,21 @@ class CA(object):
       self.N()
       for x in range(self.X):
         for y in range(self.Y):
-	  idx = self.idx(x, y)
+          idx = self.idx(x, y)
           if self.v[idx]:
             if self.n[idx] > self.Dd:
               self.v[idx] = 0
 
     def P(self):
       s = [ '-'  for r in range(self.X)]
-      print string.join(s)
+      print(string.join(s))
       for y in range(self.Y):
         op = [ ' '  for r in range(self.X)]
-	idx = self.idx(0, y)
+        idx = self.idx(0, y)
         for x in range(self.X):
           if vi[idx + x]:
             op[x] = "*"
-        print string.join(op)
+        print(string.join(op))
 
     def C(self):	
       r = self.v == self.o 

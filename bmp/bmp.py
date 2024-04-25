@@ -27,25 +27,28 @@ __about =  "bmp module, version %s, written by Paul McGuire, October, 2003, upda
 
 from math import ceil, hypot
 
+'''
+a= 100
+a.to_bytes(6, "big")
+int.from_bytes(input_data[0:3],'big',signed=True)
+'''
 
-def shortToString(i):
-  hi = (i & 0xff00) >> 8
-  lo = i & 0x00ff
-  return chr(lo) + chr(hi)
+def shortToByteArray(i):
+  return i.to_bytes(2, "little")  
 
-def longToString(i):
-  hi = (long(i) & 0x7fff0000) >> 16
-  lo = long(i) & 0x0000ffff
-  return shortToString(lo) + shortToString(hi)
+def longToByteArray(i):
+  return i.to_bytes(4, "little")  
 
-def long24ToString(i):
-  return chr(i & 0xff) + chr(i >> 8 & 0xff) + chr(i >> 16 & 0xff)
+def long24ToByteArray(i):
+  return i.to_bytes(3, "little")  
 
-def stringToLong(input_string, offset):
-  return ord(input_string[offset+3]) << 24 | ord(input_string[offset+2]) << 16 | ord(input_string[offset+1]) << 8 | ord(input_string[offset])
+def byteArrayToLong(input_ba, offset):
+  return int.from_bytes(input_ba[0:4], 'little', signed=False)
 
-def stringToLong24(input_string, offset):
-  return ord(input_string[offset+2]) << 16 | ord(input_string[offset+1]) << 8 | ord(input_string[offset])
+def byteArrayToLong24(input_string, offset):
+  return int.from_bytes(input_ba[0:3], 'little', signed=False)
+
+
 
 class Color(object):
   """class for specifying colors while drawing BitMap elements"""
@@ -59,7 +62,7 @@ class Color(object):
 
   def __setattr__(self, name, value):
     if hasattr(self, name):
-      raise AttributeError, "Color is immutable"
+      raise AttributeError("Color is immutable")
     else:
       object.__setattr__(self, name, value)
 
@@ -67,9 +70,9 @@ class Color(object):
     return "R:%d G:%d B:%d" % (self.red, self.grn, self.blu )
     
   def __hash__( self ):
-    return ( ( long(self.blu) ) + 
-              ( long(self.grn) <<  8 ) + 
-              ( long(self.red) << 16 ) )
+    return ( ( int(self.blu) ) + 
+              ( int(self.grn) <<  8 ) + 
+              ( int(self.red) << 16 ) )
   
   def __eq__( self, other ):
     return (self is other) or (self.toLong == other.toLong)
@@ -388,30 +391,30 @@ class BitMap(object):
     line_padding = (4 - (self.wd % 4)) % 4
     
     # write bitmap header
-    _bitmap = "BM"
-    _bitmap += longToString( 54 + self.ht*(self.wd*3 + line_padding) )   # DWORD size in bytes of the file
-    _bitmap += longToString( 0 )    # DWORD 0
-    _bitmap += longToString( 54  )
-    _bitmap += longToString( 40 )    # DWORD header size = 40
-    _bitmap += longToString( self.wd )    # DWORD image width
-    _bitmap += longToString( self.ht )    # DWORD image height
-    _bitmap += shortToString( 1 )    # WORD planes = 1
-    _bitmap += shortToString( 24 )    # WORD bits per pixel = 8
-    _bitmap += longToString( 0 )    # DWORD compression = 0
-    _bitmap += longToString( self.ht * (self.wd * 3 + line_padding) )    # DWORD sizeimage = size in bytes of the bitmap = width * height
-    _bitmap += longToString( 0 )    # DWORD horiz pixels per meter (?)
-    _bitmap += longToString( 0 )    # DWORD ver pixels per meter (?)
-    _bitmap += longToString( 0 )    # DWORD number of colors used = 256
-    _bitmap += longToString( 0 )    # DWORD number of "import colors = len( self.palette )
+    _bitmap = bytearray(b"BM")
+    _bitmap += longToByteArray( 54 + self.ht*(self.wd*3 + line_padding) )   # DWORD size in bytes of the file
+    _bitmap += longToByteArray( 0 )    # DWORD 0
+    _bitmap += longToByteArray( 54  )
+    _bitmap += longToByteArray( 40 )    # DWORD header size = 40
+    _bitmap += longToByteArray( self.wd )    # DWORD image width
+    _bitmap += longToByteArray( self.ht )    # DWORD image height
+    _bitmap += shortToByteArray( 1 )    # WORD planes = 1
+    _bitmap += shortToByteArray( 24 )    # WORD bits per pixel = 8
+    _bitmap += longToByteArray( 0 )    # DWORD compression = 0
+    _bitmap += longToByteArray( self.ht * (self.wd * 3 + line_padding) )    # DWORD sizeimage = size in bytes of the bitmap = width * height
+    _bitmap += longToByteArray( 0 )    # DWORD horiz pixels per meter (?)
+    _bitmap += longToByteArray( 0 )    # DWORD ver pixels per meter (?)
+    _bitmap += longToByteArray( 0 )    # DWORD number of colors used = 256
+    _bitmap += longToByteArray( 0 )    # DWORD number of "import colors = len( self.palette )
 
     # write pixels
     self.bitarray.reverse()
     for row in self.bitarray:
       for pixel in row:
         c = self.palette[pixel]
-        _bitmap += long24ToString(c)
+        _bitmap += long24ToByteArray(c)
       for i in range(line_padding):
-        _bitmap += chr( 0 )
+        _bitmap += b"\x00"
 
     return _bitmap
 
@@ -422,22 +425,22 @@ class BitMap(object):
     
     # write bitmap header
     f.write( "BM" )
-    #f.write( longToString( 54 + 256*4 + self.ht*self.wd ) )   # DWORD size in bytes of the file
-    f.write( longToString( 54 + self.ht*(self.wd*3 + line_padding) ) )   # DWORD size in bytes of the file
-    f.write( longToString( 0 ) )    # DWORD 0
-    #f.write( longToString( 54 + 256*4 ) )    # DWORD offset to the data
-    f.write( longToString( 54  ) )
-    f.write( longToString( 40 ) )    # DWORD header size = 40
-    f.write( longToString( self.wd ) )    # DWORD image width
-    f.write( longToString( self.ht ) )    # DWORD image height
-    f.write( shortToString( 1 ) )    # WORD planes = 1
-    f.write( shortToString( 24 ) )    # WORD bits per pixel = 8
-    f.write( longToString( 0 ) )    # DWORD compression = 0
-    f.write( longToString( self.ht * (self.wd * 3 + line_padding) ) )    # DWORD sizeimage = size in bytes of the bitmap = width * height
-    f.write( longToString( 0 ) )    # DWORD horiz pixels per meter (?)
-    f.write( longToString( 0 ) )    # DWORD ver pixels per meter (?)
-    f.write( longToString( 0 ) )    # DWORD number of colors used = 256
-    f.write( longToString( 0 ) )    # DWORD number of "import colors = len( self.palette )
+    #f.write( longToByteArray( 54 + 256*4 + self.ht*self.wd ) )   # DWORD size in bytes of the file
+    f.write( longToByteArray( 54 + self.ht*(self.wd*3 + line_padding) ) )   # DWORD size in bytes of the file
+    f.write( longToByteArray( 0 ) )    # DWORD 0
+    #f.write( longToByteArray( 54 + 256*4 ) )    # DWORD offset to the data
+    f.write( longToByteArray( 54  ) )
+    f.write( longToByteArray( 40 ) )    # DWORD header size = 40
+    f.write( longToByteArray( self.wd ) )    # DWORD image width
+    f.write( longToByteArray( self.ht ) )    # DWORD image height
+    f.write( shortToByteArray( 1 ) )    # WORD planes = 1
+    f.write( shortToByteArray( 24 ) )    # WORD bits per pixel = 8
+    f.write( longToByteArray( 0 ) )    # DWORD compression = 0
+    f.write( longToByteArray( self.ht * (self.wd * 3 + line_padding) ) )    # DWORD sizeimage = size in bytes of the bitmap = width * height
+    f.write( longToByteArray( 0 ) )    # DWORD horiz pixels per meter (?)
+    f.write( longToByteArray( 0 ) )    # DWORD ver pixels per meter (?)
+    f.write( longToByteArray( 0 ) )    # DWORD number of colors used = 256
+    f.write( longToByteArray( 0 ) )    # DWORD number of "import colors = len( self.palette )
 
     # write pixels
     self.bitarray.reverse()
@@ -445,7 +448,7 @@ class BitMap(object):
       print len(row)
       for pixel in row:
         c = self.palette[pixel]
-        f.write( long24ToString(c) )
+        f.write( long24ToByteArray(c) )
       for i in range(line_padding):
         f.write( chr( 0 ) )
     
@@ -462,26 +465,26 @@ class BitMap(object):
     
     # write bitmap header
     f.write( "BM" )
-    f.write( longToString( 54 + 256*4 + self.ht*self.wd ) )   # DWORD size in bytes of the file
-    f.write( longToString( 0 ) )    # DWORD 0
-    f.write( longToString( 54 + 256*4 ) )    # DWORD offset to the data
-    f.write( longToString( 40 ) )    # DWORD header size = 40
-    f.write( longToString( self.wd ) )    # DWORD image width
-    f.write( longToString( self.ht ) )    # DWORD image height
-    f.write( shortToString( 1 ) )    # WORD planes = 1
-    f.write( shortToString( 8 ) )    # WORD bits per pixel = 8
-    f.write( longToString( 1 ) )    # DWORD compression = 1=RLE8
-    f.write( longToString( self.wd * self.ht ) )    # DWORD sizeimage = size in bytes of the bitmap = width * height
-    f.write( longToString( 0 ) )    # DWORD horiz pixels per meter (?)
-    f.write( longToString( 0 ) )    # DWORD ver pixels per meter (?)
-    f.write( longToString( len(self.palette) ) )   # DWORD number of colors used = 256
-    f.write( longToString( len(self.palette) ) )    # DWORD number of "import colors = len( self.palette )
+    f.write( longToByteArray( 54 + 256*4 + self.ht*self.wd ) )   # DWORD size in bytes of the file
+    f.write( longToByteArray( 0 ) )    # DWORD 0
+    f.write( longToByteArray( 54 + 256*4 ) )    # DWORD offset to the data
+    f.write( longToByteArray( 40 ) )    # DWORD header size = 40
+    f.write( longToByteArray( self.wd ) )    # DWORD image width
+    f.write( longToByteArray( self.ht ) )    # DWORD image height
+    f.write( shortToByteArray( 1 ) )    # WORD planes = 1
+    f.write( shortToByteArray( 8 ) )    # WORD bits per pixel = 8
+    f.write( longToByteArray( 1 ) )    # DWORD compression = 1=RLE8
+    f.write( longToByteArray( self.wd * self.ht ) )    # DWORD sizeimage = size in bytes of the bitmap = width * height
+    f.write( longToByteArray( 0 ) )    # DWORD horiz pixels per meter (?)
+    f.write( longToByteArray( 0 ) )    # DWORD ver pixels per meter (?)
+    f.write( longToByteArray( len(self.palette) ) )   # DWORD number of colors used = 256
+    f.write( longToByteArray( len(self.palette) ) )    # DWORD number of "import colors = len( self.palette )
 
     # write bitmap palette 
     for clr in self.palette:
-      f.write( longToString( clr ) )
+      f.write( longToByteArray( clr ) )
     for i in range( len(self.palette), 256 ):
-      f.write( longToString( 0 ) )
+      f.write( longToByteArray( 0 ) )
     
     # write pixels
     pixelBytes = 0
@@ -517,9 +520,9 @@ class BitMap(object):
 
     # now fix sizes in header
     f.seek(2)
-    f.write( longToString( 54 + 256*4 + pixelBytes ) )   # DWORD size in bytes of the file
+    f.write( longToByteArray( 54 + 256*4 + pixelBytes ) )   # DWORD size in bytes of the file
     f.seek(34)
-    f.write( longToString( pixelBytes ) )   # DWORD size in bytes of the file
+    f.write( longToByteArray( pixelBytes ) )   # DWORD size in bytes of the file
 
     # close file
     f.close()
@@ -530,14 +533,13 @@ class BitMap(object):
     else:
       _b = self._saveBitMapNoCompression( )
     
-    f = file(filename, 'wb')
-    f.write(_b)
-    f.close()
+    with open(filename, 'wb') as f:
+        f.write(_b)
   
   def getBitmap(self, compress=False):
     _b = ''
     if  compress:
-      print 'Not yet implemented'
+      print('Not yet implemented')
     else:
       _b = self._saveBitMapNoCompression()
     
@@ -580,8 +582,8 @@ class BitMap(object):
   
   def loadImage(self, image):
     
-    width = stringToLong(image, 0x12)
-    height = stringToLong(image, 0x16)
+    width = byteArrayToLong(image, 0x12)
+    height = byteArrayToLong(image, 0x16)
     self.wd = width
     self.ht = height
     self.bgcolor = 0
@@ -594,7 +596,7 @@ class BitMap(object):
     
     row_idx = 0
     col_idx = 0
-    idx_offset = stringToLong(image, 0xa)
+    idx_offset = byteArrayToLong(image, 0xa)
     idx = idx_offset
     line_padding = (4 - ( width % 4 ) ) % 4
     bytes_in_row = width*3 + line_padding
